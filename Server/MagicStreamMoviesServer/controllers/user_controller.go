@@ -15,7 +15,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-var userCollection *mongo.Collection = database.OpenCollection("users")
+
 
 func HashPassword(password string)(string, error) {
 	HashPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
@@ -26,7 +26,7 @@ func HashPassword(password string)(string, error) {
 
 	return string(HashPassword), nil
 } 
-func RegisterUser () gin.HandlerFunc {
+func RegisterUser (client *mongo.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var user model.User
 
@@ -49,7 +49,7 @@ func RegisterUser () gin.HandlerFunc {
 
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 		defer cancel()
-
+		var userCollection *mongo.Collection = database.OpenCollection("users", client)
 		count, err := userCollection.CountDocuments(ctx, bson.M{"email":user.Email})
 
 		if err != nil {
@@ -80,7 +80,7 @@ func RegisterUser () gin.HandlerFunc {
 }
 
 
-func LoginUser() gin.HandlerFunc {
+func LoginUser(client *mongo.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var userLogin model.UserLogin
 
@@ -91,7 +91,7 @@ func LoginUser() gin.HandlerFunc {
 
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 		defer cancel()
-
+		var userCollection *mongo.Collection = database.OpenCollection("users", client)
 		var foundUser model.User
 
 		err := userCollection.FindOne(ctx, bson.M{"email":userLogin.Email}).Decode(&foundUser)

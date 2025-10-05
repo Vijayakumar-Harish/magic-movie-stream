@@ -23,18 +23,18 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
-var movieCollection *mongo.Collection = database.OpenCollection("movies")
 
-var rankingCollection *mongo.Collection = database.OpenCollection("rankings")
+
+
 var validate = validator.New()
 
-func GetMovies() gin.HandlerFunc {
+func GetMovies(client *mongo.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// c.JSON(200, gin.H{"message":"List of movies"}) // gin.H is for return JSON structure
 
 		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
 		defer cancel()
-
+		var movieCollection *mongo.Collection = database.OpenCollection("movies", client)
 		var movies [] model.Movie
 
 		cursor, err := movieCollection.Find(ctx, bson.M{})
@@ -52,11 +52,11 @@ func GetMovies() gin.HandlerFunc {
 	}
 }
 
-func GetMovie() gin.HandlerFunc {
+func GetMovie(client *mongo.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
 		defer cancel()
-
+		var movieCollection *mongo.Collection = database.OpenCollection("movies", client)
 		movieID := c.Param("imdb_id")
 
 		if movieID == "" {
@@ -76,11 +76,11 @@ func GetMovie() gin.HandlerFunc {
 	}
 }
 
-func AddMovie() gin.HandlerFunc {
+func AddMovie(client *mongo.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
 		defer cancel()
-
+		var movieCollection *mongo.Collection = database.OpenCollection("movies", client)
 		var movie model.Movie
 		if err := c.ShouldBindJSON(&movie); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error":"Invalid input "})
@@ -100,8 +100,20 @@ func AddMovie() gin.HandlerFunc {
 	}
 }
 
-func AdminReviewUpdate() gin.HandlerFunc {
+func AdminReviewUpdate(client *mongo.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
+
+		role, err := utils.GetRoleFromContext(c)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error":"Role not found in context"})
+			return
+		}
+
+		if role != "ADMIN" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error":"User must be part of the ADMIN role"})
+			return
+		}
+
 		movieId := c.Param("imdb_id")
 		if movieId == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error":"Movie Id required"})
@@ -140,7 +152,7 @@ func AdminReviewUpdate() gin.HandlerFunc {
 
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 		defer cancel()
-
+		var movieCollection *mongo.Collection = database.OpenCollection("movies", client)
 		result, err := movieCollection.UpdateOne(ctx, filter, update)
 
 		if err != nil{
@@ -229,7 +241,8 @@ func GetRankings()([]model.Ranking, error) {
 
 	var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 	defer cancel()
-
+	var client *mongo.Client
+	var rankingCollection *mongo.Collection = database.OpenCollection("rankings", client)
 	cursor, err := rankingCollection.Find(ctx, bson.M{})
 	
 	if err != nil {
@@ -244,7 +257,7 @@ func GetRankings()([]model.Ranking, error) {
 	return rankings, nil
 }
 
-func GetRecommendedMovies() gin.HandlerFunc {
+func GetRecommendedMovies(client *mongo.Client) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userId, err := utils.GetUserIdFromContext(c)
 
@@ -279,8 +292,8 @@ func GetRecommendedMovies() gin.HandlerFunc {
 		filter := bson.M{"genre.genre_name":bson.M{"$in":favourite_genres}}
 
 		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
-	defer cancel()
-
+		defer cancel()
+		var movieCollection *mongo.Collection = database.OpenCollection("movies",client)
 		cursor, err := movieCollection.Find(ctx, filter, findOptions)
 
 		if err != nil {
@@ -301,9 +314,10 @@ func GetRecommendedMovies() gin.HandlerFunc {
 }
 
 func GetUsersFavouriteGenres(userId string) ([]string, error){
+	var client *mongo.Client
 	var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 	defer cancel()
-
+	var userCollection *mongo.Collection = database.OpenCollection("users",client)
 	filter := bson.M{"user_id":userId}
 
 	projection := bson.M{

@@ -5,6 +5,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 	routes "github.com/Vijayakumar-Harish/MagicStreamMovies/Server/MagicStreamMoviesServer/routes"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+
+	database "github.com/Vijayakumar-Harish/MagicStreamMovies/Server/MagicStreamMoviesServer/database"
+
 )
 
 func main() {
@@ -15,8 +19,10 @@ func main() {
 		c.String(200, "Hello, MagicStreamMovies!")
 	})
 
-	routes.SetupUnProtectedRoutes(router)
-	routes.SetupProtectedRoutes(router)
+	var client *mongo.Client = database.Connect()
+
+	routes.SetupUnProtectedRoutes(router, client)
+	routes.SetupProtectedRoutes(router, client)
 	
 
 	if err:=router.Run(":8082");err!=nil{

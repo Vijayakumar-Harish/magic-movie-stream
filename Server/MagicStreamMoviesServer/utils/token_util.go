@@ -25,7 +25,7 @@ type SignedDetails struct {
 
 var SECRET_KEY string = os.Getenv("SECRET_KEY")
 var SECRET_REFRESH_KEY = os.Getenv("SECRET_REFRESH_KEY")
-var userCollection *mongo.Collection = database.OpenCollection("users")
+
 
 func GenerateAllTokens(email, firstName, lastName, role, userId string) (string,string, error) {
 	claims := &SignedDetails{
@@ -70,9 +70,10 @@ func GenerateAllTokens(email, firstName, lastName, role, userId string) (string,
 }
 
 func UpdateAllToken(userId, token, refreshToken string) (err error) {
+	var client *mongo.Client
 	var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
 	defer cancel()
-
+	var userCollection *mongo.Collection = database.OpenCollection("users",client)
 	updateAt, _ := time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 
 	updateData := bson.M{
@@ -141,4 +142,20 @@ func GetUserIdFromContext(c *gin.Context) (string, error) {
 	}
 
 	return id, nil
+}
+
+func GetRoleFromContext(c *gin.Context) (string, error) {
+	role, exists := c.Get("role")
+
+	if !exists {
+		return "", errors.New("role does not exists in this context")
+	}
+
+	memberRole, ok := role.(string)
+
+	if !ok {
+		return "", errors.New("unable to retrieve role")
+	}
+
+	return memberRole, nil
 }
