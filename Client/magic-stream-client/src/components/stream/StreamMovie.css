@@ -1,0 +1,11 @@
+.react-player-container {
+  width: 100%;
+  height: 100vh; /* or any fixed height */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #000;
+}
+iframe, .youtube-player {
+  max-width: 100%;
+}

@@ -1,18 +1,35 @@
+import { useState } from "react";
 import Button from "react-bootstrap/Button";
 import Container from "react-bootstrap/Container";
 import Nav from "react-bootstrap/Nav";
 import Navbar from "react-bootstrap/Navbar";
 import { useNavigate, NavLink, Link } from "react-router-dom";
-import { useState } from "react";
+import useAuth from "../../hooks/useAuth";
+import logo from "../../assets/MagicStreamLogo.png";
 
-const Header = () => {
+const Header = ({ handleLogout }) => {
   const navigate = useNavigate();
-  const [auth, setAuth] = useState(false);
+  const { auth } = useAuth();
 
   return (
-    <Navbar bg="dark" variant="dark" expand="lg" className="shadow-sm">
+    <Navbar
+      bg="dark"
+      variant="dark"
+      expand="lg"
+      stick="top"
+      className="shadow-sm"
+    >
       <Container>
-        <Navbar.Brand>Magic Stream</Navbar.Brand>
+        <Navbar.Brand>
+          <img
+            alt=""
+            src={logo}
+            width="30"
+            height="30"
+            className="d-inline-block align-top me-2"
+          />
+          Magic Stream
+        </Navbar.Brand>
 
         <Navbar.Toggle aria-controls="main-navbar-nav" />
         <Navbar.Collapse>
@@ -28,10 +45,14 @@ const Header = () => {
           <Nav className="ms-auto align-items-center">
             {auth ? (
               <>
-                <span>
-                  Hello, <strong>Name</strong>
+                <span className="me-3 text-light">
+                  Hello, <strong>{auth.first_name}</strong>
                 </span>
-                <Button variant="outline-light" size="sm">
+                <Button
+                  variant="outline-light"
+                  size="sm"
+                  onClick={handleLogout}
+                >
                   Logout
                 </Button>
               </>
@@ -46,7 +67,7 @@ const Header = () => {
                   Login
                 </Button>
                 <Button
-                  variant="outline-info"
+                  variant="info"
                   size="sm"
                   onClick={() => navigate("/register")}
                 >
@@ -60,5 +81,4 @@ const Header = () => {
     </Navbar>
   );
 };
-
 export default Header;
