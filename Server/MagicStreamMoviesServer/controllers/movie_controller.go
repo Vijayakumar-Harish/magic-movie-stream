@@ -12,6 +12,7 @@ import (
 	"time"
 
 	database "github.com/Vijayakumar-Harish/MagicStreamMovies/Server/MagicStreamMoviesServer/database"
+	"github.com/Vijayakumar-Harish/MagicStreamMovies/Server/MagicStreamMoviesServer/models"
 	model "github.com/Vijayakumar-Harish/MagicStreamMovies/Server/MagicStreamMoviesServer/models"
 	"github.com/Vijayakumar-Harish/MagicStreamMovies/Server/MagicStreamMoviesServer/utils"
 	"github.com/gin-gonic/gin"
@@ -358,4 +359,27 @@ func GetUsersFavouriteGenres(userId string) ([]string, error){
 	fmt.Println(genreNames)
 
 	return genreNames, nil
+}
+
+func GetGenres(client *mongo.Client) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
+
+		var genres []models.Genre
+		var genreCollection *mongo.Collection = database.OpenCollection("genres", client)
+		cursor, err := genreCollection.Find(ctx, bson.M{})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error":"Error fetching movie genres"})
+			return
+		}
+		defer cursor.Close(ctx)
+
+		if err := cursor.All(ctx, &genres); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(http.StatusOK, genres)
+	}
 }
